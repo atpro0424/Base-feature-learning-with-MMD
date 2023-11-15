@@ -6,6 +6,9 @@ import numpy as np
 import random
 
 def get_iid_split(train = False, transform = None, download=False):
+    """
+    Get two iid CIFAR10 subsets, each contains 10 classes, 500 images per class.
+    """
     dataset = CIFAR10(root='/data/datasets/CIFAR10', train=train, download=download, transform=transform)
 
     # Get the targets (labels) of the test set
@@ -29,6 +32,9 @@ def get_iid_split(train = False, transform = None, download=False):
     return Subset(dataset, indices_1), Subset(dataset, indices_2)
 
 def get_non_iid_split(train=False, transform=None, download=False, use_random=False):
+    """
+    Get two non iid CIFAR10 subsets, each contains 5 classes, 1000 images per class.
+    """
     dataset = CIFAR10(root='/data/datasets/CIFAR10', train=train, download=download, transform=transform)
     targets = np.array(dataset.targets)
     if train == True:
@@ -148,6 +154,7 @@ class SRGB2LMS:
 
 def cone_transform(lms_image_, gamma=0.01):
     """
+    Reference: https://www.chriskanan.com/wp-content/uploads/Kanan_ISRN_Machine_Vision_2013.pdf
     Apply the non-linear response function to an LMS image.
 
     Parameters:
@@ -205,7 +212,9 @@ class ImageNet1k(ImageFolder):
 
 def get_imagenet_subsets(root_dir, num_classes=10, imgs_per_subset=1000, transform=None, selected_classes=None):
     """
-    Create four subsets of the ImageNet dataset with specified properties.
+    Create four subsets of the ImageNet dataset.
+    First two datasets are iid, each containing 10 classes (randomly sampled from imagenet1000)
+    Last two datasets are non-iid, each containing 5 classes (same classes as the first two)
 
     Args:
     - root_dir (str): Path to the ImageNet dataset.
