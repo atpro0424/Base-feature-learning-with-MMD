@@ -31,6 +31,18 @@ def register_hook(task, layer_name):
         #     shuffled_indices = torch.randperm(features.shape[0])
         #     selected_indices = shuffled_indices[:6000]
         #     features = features[selected_indices]
+
+        
+        # Above is the original method.
+
+        """
+        Unfold a feature map into different patches according to the convolutional layer’s filter size. 
+        Then use max-pooling to convert each small patch into a number. e.g. 
+        (batch_size, channel, W, H ) ->unfold & reshape->
+        (batch_size * patches_per_img, Channel, W’, H’)->max-pooling->
+        (total number of patches in a batch, Channel). 
+        Then I use this tensor to compute the mmd.
+        """
         
         if layer_name == 'fc':
             features = input[0].detach()
@@ -43,6 +55,7 @@ def register_hook(task, layer_name):
             pooled_features = gap(features)  # Shape will be [batchsize * num_patch, C, 1, 1]
             features = pooled_features.view(pooled_features.size(0), -1)
         if features.shape[0] > 6000:
+            # Randomly sample 6000 patches. Otherwise the memory could be extremely large.
             shuffled_indices = torch.randperm(features.shape[0])
             selected_indices = shuffled_indices[:6000]
             features = features[selected_indices]
