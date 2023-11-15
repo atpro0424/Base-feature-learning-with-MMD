@@ -20,31 +20,32 @@ def register_hook(task, layer_name):
         # At each iteration, we compute mmd between two groups of (C x 3 x 3)-dim vectors, each group having batch_size samples.
         # And we take the mean mmd of all the patches. (Intuitively we are computing mean mmd of all patches.)
         # """
-        if layer_name == 'fc':
-            features = input[0].detach()
-        else:
-            unfold = nn.Unfold(kernel_size=model.kernel_size, padding=model.padding, stride=model.stride)
-            features = unfold(input[0].detach())
-            features = features.permute(2, 0, 1)
-        if features.shape[0] > 6000:
-            shuffled_indices = torch.randperm(features.shape[0])
-            selected_indices = shuffled_indices[:6000]
-            features = features[selected_indices]
         
         # if layer_name == 'fc':
         #     features = input[0].detach()
         # else:
         #     unfold = nn.Unfold(kernel_size=model.kernel_size, padding=model.padding, stride=model.stride)
         #     features = unfold(input[0].detach())
-        #     features = features.reshape(features.shape[0] * features.shape[2], input[0].shape[1], model.kernel_size[0], model.kernel_size[1]) # (batch_size * num_patches, Channel, patch_width, patch_heigh)
-        #     # Global Average Pooling
-        #     gap = nn.AdaptiveAvgPool2d((1, 1))
-        #     pooled_features = gap(features)  # Shape will be [batchsize * num_patch, C, 1, 1]
-        #     features = pooled_features.view(pooled_features.size(0), -1)
+        #     features = features.permute(2, 0, 1)
         # if features.shape[0] > 6000:
         #     shuffled_indices = torch.randperm(features.shape[0])
         #     selected_indices = shuffled_indices[:6000]
         #     features = features[selected_indices]
+        
+        if layer_name == 'fc':
+            features = input[0].detach()
+        else:
+            unfold = nn.Unfold(kernel_size=model.kernel_size, padding=model.padding, stride=model.stride)
+            features = unfold(input[0].detach())
+            features = features.reshape(features.shape[0] * features.shape[2], input[0].shape[1], model.kernel_size[0], model.kernel_size[1]) # (batch_size * num_patches, Channel, patch_width, patch_heigh)
+            # Global Average Pooling
+            gap = nn.AdaptiveAvgPool2d((1, 1))
+            pooled_features = gap(features)  # Shape will be [batchsize * num_patch, C, 1, 1]
+            features = pooled_features.view(pooled_features.size(0), -1)
+        if features.shape[0] > 6000:
+            shuffled_indices = torch.randperm(features.shape[0])
+            selected_indices = shuffled_indices[:6000]
+            features = features[selected_indices]
 
         task[layer_name] = features
 
