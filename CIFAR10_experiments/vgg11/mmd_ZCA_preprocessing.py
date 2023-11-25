@@ -109,7 +109,6 @@ whitened_imgs = zca.transform(X)
 
 cov_matrix = torch.cov(whitened_imgs.permute(1,2,3,0).reshape(-1, batch_size))
 
-plt.figure(figsize=(8, 8))
 plt.imshow(cov_matrix, cmap='hot', interpolation='nearest')
 plt.title(f"Covariance Matrix of Whitened Images when epsilon = {epsilon}")
 plt.colorbar()
