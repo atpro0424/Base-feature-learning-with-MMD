@@ -9,7 +9,7 @@ from models.resnet_cifar import *
 from models.vgg_cifar import *
 import random
 
-from utils import add_hooks, remove_hooks, get_ZCA_matrix, ConeTransform
+from utils import add_hooks, remove_hooks, ConeTransform
 from mmd_function import MMD
 
 # TODO: 
@@ -21,22 +21,21 @@ mode = "non_iid" # non_iid, iid
 extract_mode = "gap" # flatten, channel, gap
 network_name = "vgg11conv0" # resnet20, vgg11, vgg11conv0, resnet20conv0
 resolution = 224
-num_classes = 10
+num_classes = 50
 MMD_path = './MMD_values'
 
-ZCA_preprocessing = False
 ZCA_conv0 = True
 lmscone = True
 
 if ZCA_conv0:
     assert 'conv0' in network_name, 'ZCA_conv0 is True but network_name does not contain conv0'
-    zca_conv0_path = './../ZCA_init_imagenet/outputs/conv0_ZCAinit_imagenetres224_addgray/'
+    zca_conv0_path = f'./../ZCA_init_imagenet/outputs/conv0_ZCAinit_imagenetres224_classes{num_classes}/'
     if lmscone:
-        zca_conv0_path = './../ZCA_init_imagenet/outputs/conv0_ZCAinit_imagenetres224_addgray_lmscone/'
+        zca_conv0_path = f'./../ZCA_init_imagenet/outputs/conv0_ZCAinit_imagenetres224_classes{num_classes}_lmscone/'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-MMD_path = os.path.join(MMD_path, f'{network_name}_imagenetres{resolution}')
+MMD_path = os.path.join(MMD_path, f'{network_name}_imagenetres{resolution}_classes{num_classes}')
 if not os.path.exists(MMD_path):
     os.makedirs(MMD_path)
 
@@ -70,11 +69,6 @@ transform = T.Compose([
 # Load CIFAR10 dataset test set
 dataset = ImageFolder(root='/data/datasets/ImageNet2012/train', transform=transform)
 
-# if ZCA_preprocessing:
-#     # Calculate zca matrix using train set
-#     traindataset = ImageFolder(root='/data/datasets/ImageNet2012/train', transform=transform)
-#     ZCA_obj = get_ZCA_matrix(traindataset, num_imgs=len(traindataset))
-
 # Load indices
 indices_path = './indices'
 if mode == "iid":
@@ -87,8 +81,8 @@ elif mode == "non_iid":
 # Get datasets A and B with subset and create loaders
 data_A = torch.utils.data.Subset(dataset, indices_A)
 data_B = torch.utils.data.Subset(dataset, indices_B)
-loader_A = torch.utils.data.DataLoader(data_A, batch_size=128, shuffle=False)
-loader_B = torch.utils.data.DataLoader(data_B, batch_size=128, shuffle=False)
+loader_A = torch.utils.data.DataLoader(data_A, batch_size=100, shuffle=False)
+loader_B = torch.utils.data.DataLoader(data_B, batch_size=100, shuffle=False)
 
 # Load network and put it in eval mode
 model = eval(network_name)(num_classes=num_classes)
@@ -111,8 +105,6 @@ print('\nGetting features for dataset A ...')
 features_A = {}
 hook_handler_A = add_hooks(features_A, model, extract_mode)
 for inputs, _ in tqdm(loader_A):
-    if ZCA_preprocessing:
-        inputs = ZCA_obj.transform_data(inputs)
     inputs = inputs.to(device)
     _=model(inputs)
 remove_hooks(hook_handler_A)
@@ -122,8 +114,6 @@ print('\nGetting features for dataset B ...')
 features_B = {}
 hook_handler_B = add_hooks(features_B, model, extract_mode)
 for inputs, _ in tqdm(loader_B):
-    if ZCA_preprocessing:
-        inputs = ZCA_obj.transform_data(inputs)
     inputs = inputs.to(device)
     _=model(inputs)
 remove_hooks(hook_handler_B)
@@ -144,12 +134,10 @@ for layer_name in MMD_values.keys():
 # Save MMD values
 
 file_name = f'MMD_{mode}_{extract_mode}'
-file_name = file_name + f'_randinit'
+file_name = file_name + f'_randinit_classes'
 
 if lmscone:
     file_name = file_name + '_lmscone'
-if ZCA_preprocessing:
-    file_name = file_name + '_ZCApre'
 if ZCA_conv0:
     file_name = file_name + '_ZCAconv0'
 

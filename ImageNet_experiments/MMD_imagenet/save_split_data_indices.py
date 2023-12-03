@@ -22,16 +22,11 @@ if not os.path.exists(indices_path):
 
 ### Save train indices
 traindir = "/data/datasets/ImageNet2012/train"
-nimg = 1500
-(iid_dataset1, iid_dataset2, noniid_dataset3, noniid_dataset4), subsets_classes = get_imagenet_subsets(traindir, imgs_per_subset=nimg // 2, transform=None)
+num_classes = 50
+nimg = 5000
+(iid_dataset1, iid_dataset2, noniid_dataset3, noniid_dataset4), subsets_classes = get_imagenet_subsets(traindir, num_classes=num_classes, imgs_per_subset=nimg // 2, transform=None)
 print(f"Classes selected: {sorted(subsets_classes['A'])}")
-# # Load CIFAR10 dataset (it is shuffled) and get indices and labels
-# dataset = torch.utils.data.ConcatDataset([iid_dataset1, iid_dataset2])
-# indices = np.arange(len(dataset))
-# labels = np.array(dataset.targets)
 
-# Save IID indices (data is split in half)
-# iid_indices_A, iid_indices_B, _, _ = train_test_split(indices, labels, test_size=0.5, stratify=labels, random_state=seed)
 np.save(f'{indices_path}/IID_indices_A.npy', iid_dataset1.indices)
 np.save(f'{indices_path}/IID_indices_B.npy', iid_dataset2.indices)
 

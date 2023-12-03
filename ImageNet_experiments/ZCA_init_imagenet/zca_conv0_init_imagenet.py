@@ -23,14 +23,15 @@ def main():
 
     traindir = '/data/datasets/ImageNet2012/train' 
     save_dir = 'outputs/'
-    nimg = 2000
+    nimg = 5000
     normalize_weights = False
     resolution = 224
-    add_gray = True
-    lmscone = False
+    add_gray = False
+    lmscone = True
+    num_classes = 50
 
     # Create save dir
-    save_dir = os.path.join(save_dir, f'conv0_ZCAinit_imagenetres{resolution}')
+    save_dir = os.path.join(save_dir, f'conv0_ZCAinit_imagenetres{resolution}_classes{num_classes}')
     if add_gray: save_dir += '_addgray'
     if normalize_weights: save_dir += '_norm'
     if lmscone: save_dir += '_lmscone'
@@ -41,8 +42,9 @@ def main():
     # Get images
     # imgs = get_images(traindir, nimg, resolution, lmscone=lmscone).to(device)
     if lmscone:
-        normalize = transforms.Normalize(mean=[0.61700356, 0.6104542, 0.5773882],
-                                        std=[1.0, 1.0, 1.0]) # std=[0.23713203, 0.2416522, 0.25481918] # std=[1.0, 1.0, 1.0]
+        normalize = transforms.Normalize(mean=[0.5910, 0.5758, 0.5298], 
+                                         std=[1.0, 1.0, 1.0])
+            #                      std=[0.2657, 0.2710, 0.2806]) 
         transform_imagenet = transforms.Compose([
                 transforms.Resize(256),
                 transforms.RandomCrop(resolution),
@@ -59,12 +61,15 @@ def main():
                 transforms.ToTensor(),
                 normalize
             ])
-    (iid_dataset1, iid_dataset2, noniid_dataset3, noniid_dataset4), subsets_classes = get_imagenet_subsets(traindir, imgs_per_subset=nimg // 2, transform=transform_imagenet)
+    (iid_dataset1, iid_dataset2, _, _), subsets_classes = get_imagenet_subsets(traindir, num_classes=num_classes, imgs_per_subset=nimg // 2, transform=transform_imagenet)
     print(f"Classes selected: {sorted(subsets_classes['A'])}")
 
     imgs, _ = next(iter(torch.utils.data.DataLoader(torch.utils.data.ConcatDataset([iid_dataset1, iid_dataset2]), batch_size = nimg, shuffle=True)))
     # Define conv0 parameters
-    conv0 = nn.Conv2d(3, 4, kernel_size=3, stride=1, padding=1, bias=True)
+    if add_gray:
+        conv0 = nn.Conv2d(3, 4, kernel_size=3, stride=1, padding=1, bias=True)
+    else:
+        conv0 = nn.Conv2d(3, 3, kernel_size=3, stride=1, padding=1, bias=True)
     kernel_size = conv0.kernel_size[0]
     norm_value = None
     if normalize_weights:
